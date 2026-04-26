@@ -1,0 +1,493 @@
+================================================================================
+                        CAMPUSCONNECT - DETAILED ARCHITECTURE
+                        Smart Resource Allocation System
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+1. Project Overview
+2. Tech Stack
+3. Backend Architecture (Spring Boot)
+4. Frontend Architecture (React + Vite)
+5. Database Schema
+6. API Endpoints
+7. Authentication & Security
+8. Feature-by-Feature Breakdown
+9. Data Flow Examples
+10. Development Setup
+11. Known Issues & Fixes Applied
+
+================================================================================
+1. PROJECT OVERVIEW
+================================================================================
+
+CampusConnect is a full-stack web application for managing campus resource
+bookings. It allows students and faculty to browse available resources
+(classrooms, labs, seminar halls, sports facilities, etc.), make booking
+requests, and allows admins to approve/reject bookings and manage resources.
+
+Key Features:
+- Role-based access control (Student, Faculty, Admin)
+- JWT-based stateless authentication
+- Resource browsing with filtering and search
+- Booking creation with conflict detection
+- Admin dashboard with statistics
+- Admin panel for booking approval/rejection
+- Admin panel for resource CRUD operations
+- Responsive glassmorphism UI design
+
+================================================================================
+2. TECH STACK
+================================================================================
+
+BACKEND
+-------
+- Framework:      Spring Boot 3.2.3
+- Language:       Java 21
+- Build Tool:     Maven
+- Database:       H2 (dev) / PostgreSQL (prod)
+- ORM:            Spring Data JPA (Hibernate)
+- Security:       Spring Security + JWT (jjwt 0.11.5)
+- Validation:     Jakarta Bean Validation
+- API Docs:       OpenAPI 3 + Swagger UI (springdoc 2.3.0)
+- Utilities:      Lombok 1.18.30, MapStruct 1.5.5
+
+FRONTEND
+--------
+- Framework:      React 18
+- Build Tool:     Vite 5
+- Language:       JavaScript (JSX)
+- Styling:        Tailwind CSS 3 + Custom CSS Variables
+- Animations:     Framer Motion
+- Routing:        React Router DOM 6
+- HTTP Client:    Axios
+- Date Utils:     date-fns
+- Icons:          Lucide React
+- UI Utilities:   clsx
+
+================================================================================
+3. BACKEND ARCHITECTURE (SPRING BOOT)
+================================================================================
+
+PROJECT STRUCTURE
+-----------------
+backend/
+├── pom.xml                              # Maven dependencies
+├── src/main/java/com/campusconnect/
+│   ├── CampusConnectApplication.java    # Main Spring Boot class
+│   ├── config/
+│   │   ├── DataSeeder.java             # Dev profile demo data
+│   │   ├── OpenApiConfig.java          # Swagger/OpenAPI config
+│   │   └── SecurityConfig.java         # Spring Security filter chain
+│   ├── controller/                     # REST API controllers
+│   │   ├── AuthController.java
+│   │   ├── BookingController.java
+│   │   ├── DashboardController.java
+│   │   └── ResourceController.java
+│   ├── service/                        # Business logic layer
+│   │   ├── AuthService.java
+│   │   ├── BookingService.java
+│   │   ├── DashboardService.java
+│   │   └── ResourceService.java
+│   ├── repository/                     # JPA data access layer
+│   │   ├── BookingRepository.java
+│   │   ├── ResourceRepository.java
+│   │   └── UserRepository.java
+│   ├── entity/                         # JPA entity classes
+│   │   ├── Booking.java
+│   │   ├── Resource.java
+│   │   └── User.java
+│   ├── dto/
+│   │   ├── request/                    # Incoming DTOs
+│   │   │   ├── CreateBookingRequest.java
+│   │   │   ├── CreateResourceRequest.java
+│   │   │   ├── LoginRequest.java
+│   │   │   ├── RegisterRequest.java
+│   │   │   └── UpdateBookingStatusRequest.java
+│   │   └── response/                   # Outgoing DTOs
+│   │       ├── ApiResponse.java
+│   │       ├── AuthResponse.java
+│   │       ├── BookingResponse.java
+│   │       ├── DashboardStatsResponse.java
+│   │       ├── ResourceResponse.java
+│   │       └── UserResponse.java
+│   ├── security/                       # JWT & auth components
+│   │   ├── CustomUserDetailsService.java
+│   │   ├── JwtAuthenticationFilter.java
+│   │   └── JwtUtils.java
+│   └── exception/                      # Global exception handling
+│       ├── BadRequestException.java
+│       ├── ConflictException.java
+│       ├── GlobalExceptionHandler.java
+│       └── ResourceNotFoundException.java
+└── src/main/resources/
+    └── application.yml                 # App configuration (dev/prod profiles)
+
+================================================================================
+4. FRONTEND ARCHITECTURE (REACT + VITE)
+================================================================================
+
+PROJECT STRUCTURE
+-----------------
+frontend/
+├── index.html                          # HTML entry point
+├── vite.config.js                      # Vite config with proxy
+├── package.json                        # NPM dependencies
+├── tailwind.config.js                  # Tailwind customization
+├── postcss.config.js                   # PostCSS setup
+├── public/                             # Static assets
+└── src/
+    ├── main.jsx                        # React app entry
+    ├── App.jsx                         # Route definitions
+    ├── styles/
+    │   └── globals.css                 # Global styles + CSS variables
+    ├── utils/
+    │   └── api.js                      # Axios API client + endpoint methods
+    ├── hooks/
+    │   └── useAuth.jsx                 # Auth context (login/register/logout)
+    ├── components/
+    │   ├── layout/
+    │   │   ├── Layout.jsx              # Sidebar + main content wrapper
+    │   │   └── Sidebar.jsx             # Navigation sidebar (responsive)
+    │   └── ui/
+    │       └── index.jsx               # Reusable UI components
+    └── pages/
+        ├── LoginPage.jsx               # Login with demo accounts
+        ├── RegisterPage.jsx            # User registration
+        ├── DashboardPage.jsx           # Home dashboard
+        ├── ResourcesPage.jsx           # Browse all resources
+        ├── BookingPage.jsx             # Create a booking
+        ├── MyBookingsPage.jsx          # View/cancel my bookings
+        └── AdminPage.jsx               # Admin panel (bookings + resources)
+
+================================================================================
+5. DATABASE SCHEMA
+================================================================================
+
+TABLE: users
+------------
+id              BIGINT PK AUTO_INCREMENT
+email           VARCHAR(255) NOT NULL UNIQUE
+password        VARCHAR(255) NOT NULL
+full_name       VARCHAR(255) NOT NULL
+department      VARCHAR(255)
+student_id      VARCHAR(255)
+phone           VARCHAR(255)
+avatar_url      VARCHAR(255)
+role            VARCHAR(20) NOT NULL DEFAULT 'STUDENT'
+enabled         BOOLEAN NOT NULL DEFAULT TRUE
+created_at      TIMESTAMP
+updated_at      TIMESTAMP
+
+TABLE: resources
+----------------
+id              BIGINT PK AUTO_INCREMENT
+name            VARCHAR(255) NOT NULL
+description     VARCHAR(1000)
+type            VARCHAR(50) NOT NULL
+location        VARCHAR(255) NOT NULL
+building        VARCHAR(255)
+floor           VARCHAR(255)
+room_number     VARCHAR(255)
+capacity        INT NOT NULL
+image_url       VARCHAR(255)
+available       BOOLEAN NOT NULL DEFAULT TRUE
+active          BOOLEAN NOT NULL DEFAULT TRUE
+created_at      TIMESTAMP
+updated_at      TIMESTAMP
+
+TABLE: resource_amenities (ElementCollection)
+---------------------------------------------
+resource_id     BIGINT FK
+amenity         VARCHAR(255)
+
+TABLE: bookings
+---------------
+id              BIGINT PK AUTO_INCREMENT
+user_id         BIGINT FK NOT NULL
+resource_id     BIGINT FK NOT NULL
+booking_date    DATE NOT NULL
+start_time      TIME NOT NULL
+end_time        TIME NOT NULL
+purpose         VARCHAR(255) NOT NULL
+notes           VARCHAR(500)
+status          VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+admin_notes     VARCHAR(500)
+approved_at     TIMESTAMP
+cancelled_at    TIMESTAMP
+attendees_count INT NOT NULL DEFAULT 1
+created_at      TIMESTAMP
+updated_at      TIMESTAMP
+
+================================================================================
+6. API ENDPOINTS
+================================================================================
+
+AUTHENTICATION (/api/v1/auth)
+-----------------------------
+POST /register          → Register new user (public)
+POST /login             → Login, returns JWT token (public)
+
+RESOURCES (/api/v1/resources)
+-----------------------------
+GET  /                  → List all active resources (public)
+GET  /?type={type}      → Filter by resource type (public)
+GET  /available         → Find available for time slot (public)
+GET  /{id}              → Get resource by ID (public)
+POST /                  → Create resource (ADMIN only)
+PUT  /{id}              → Update resource (ADMIN only)
+PATCH /{id}/toggle-availability → Toggle availability (ADMIN only)
+DELETE /{id}            → Soft delete resource (ADMIN only)
+
+BOOKINGS (/api/v1/bookings)
+---------------------------
+POST /                  → Create booking (authenticated)
+GET  /my                → Get my bookings (authenticated)
+GET  /all               → Get all bookings (ADMIN only)
+GET  /pending           → Get pending bookings (ADMIN only)
+PATCH /{id}/status      → Update booking status (ADMIN only)
+PATCH /{id}/cancel      → Cancel my booking (authenticated)
+
+DASHBOARD (/api/v1/dashboard)
+-----------------------------
+GET /stats              → Get admin statistics (ADMIN only)
+
+================================================================================
+7. AUTHENTICATION & SECURITY
+================================================================================
+
+JWT TOKEN FLOW
+--------------
+1. User logs in → server validates credentials
+2. Server generates access token (24h expiry) + refresh token (7d expiry)
+3. Frontend stores token in localStorage as 'cc_token'
+4. Every API request includes: Authorization: Bearer <token>
+5. JwtAuthenticationFilter validates token on every request
+6. If token expired/invalid → 401 → frontend redirects to login
+
+SECURITY CONFIG (SecurityConfig.java)
+-------------------------------------
+- CSRF disabled (stateless JWT)
+- CORS configured for localhost:5173 and localhost:3000
+- Public endpoints: /auth/**, /h2-console/**, swagger, GET /resources/**
+- Admin-only: POST/PUT/DELETE/PATCH /resources/**, /dashboard/**, /bookings/all, /bookings/pending
+- Method security: @PreAuthorize("hasRole('ADMIN')") on controller methods
+- Passwords: BCrypt hashing
+
+ROLES
+-----
+STUDENT  → Can browse resources, create bookings, view own bookings, cancel own bookings
+FACULTY  → Same as student + bookings prioritized for approval
+ADMIN    → Full access: approve/reject bookings, manage resources, view dashboard stats
+
+================================================================================
+8. FEATURE-BY-FEATURE BREAKDOWN
+================================================================================
+
+8.1 AUTHENTICATION
+------------------
+Backend:
+  - AuthController handles /login and /register
+  - AuthService: validates email uniqueness, hashes password with BCrypt,
+    generates JWT tokens via JwtUtils
+  - CustomUserDetailsService loads user by email for Spring Security
+
+Frontend:
+  - LoginPage: form with email/password + demo account shortcuts (admin/student/faculty)
+  - RegisterPage: form with fullName, email, password, department, studentId, phone, role
+  - useAuth hook: manages auth state via React Context, stores token/user in localStorage
+  - API client attaches Bearer token to every request via interceptor
+
+8.2 RESOURCE BROWSING
+---------------------
+Backend:
+  - ResourceController: GET endpoints for listing, filtering by type,
+    finding available for date/time slot, CRUD (admin)
+  - ResourceService: business logic for CRUD, availability toggle, soft delete
+  - ResourceRepository: JPA queries with active=true filtering
+
+Frontend:
+  - ResourcesPage: grid view with search, type filter, availability filter
+  - Resource cards show: name, type badge, location, capacity, amenities, availability
+  - Click card → modal with full details + "Book Now" button
+  - Admin sees all resources; students see only available ones for booking
+
+8.3 BOOKING CREATION
+--------------------
+Backend:
+  - BookingController: POST /bookings with CreateBookingRequest
+  - BookingService validates:
+    * Resource exists and is available
+    * Start time < end time
+    * Booking date is not in the past
+    * No conflicting bookings for same resource/date/time (findConflictingBookings)
+  - Booking saved with status=PENDING
+
+Frontend:
+  - BookingPage: 3-column layout on desktop
+    * Left: resource selector (cards with availability)
+    * Middle: date picker (7-day week view, prev/next week navigation)
+    * Right: time slot picker (08:00-19:00), purpose textarea,
+      attendees count, notes, submit button
+  - Success screen with "View My Bookings" and "Book Another" buttons
+
+8.4 MY BOOKINGS
+---------------
+Backend:
+  - GET /bookings/my returns user's bookings ordered by createdAt DESC
+  - PATCH /bookings/{id}/cancel allows users to cancel their own bookings
+
+Frontend:
+  - MyBookingsPage: list of booking cards with filter tabs (ALL/PENDING/APPROVED/REJECTED/CANCELLED)
+  - Each card shows: resource name, date, time, location, purpose, status badge,
+    admin notes (if any), cancel button (for PENDING/APPROVED)
+
+8.5 ADMIN DASHBOARD
+-------------------
+Backend:
+  - DashboardController: GET /dashboard/stats (admin only)
+  - DashboardService aggregates: total resources, available resources,
+    total bookings, pending bookings, approved bookings, total users,
+    today's bookings, recent 10 bookings
+
+Frontend:
+  - DashboardPage: stat cards for admin, recent bookings table
+  - Non-admin sees role card + quick action stat cards
+
+8.6 ADMIN PANEL - BOOKING MANAGEMENT
+------------------------------------
+Backend:
+  - GET /bookings/all → all bookings sorted by bookingDate ASC, startTime ASC
+  - GET /bookings/pending → pending bookings only
+  - PATCH /bookings/{id}/status → approve/reject with admin notes
+
+Frontend:
+  - AdminPage "Bookings" tab: table with columns User, Resource, Date & Time,
+    Purpose, Status, Actions
+  - Status filter buttons: ALL, PENDING, APPROVED, REJECTED, CANCELLED
+  - PENDING bookings show approve (green check) and reject (red X) buttons
+  - Bookings sorted by closest upcoming event first
+
+8.7 ADMIN PANEL - RESOURCE MANAGEMENT
+-------------------------------------
+Backend:
+  - Full CRUD via ResourceController (admin-only endpoints)
+  - Soft delete (sets active=false instead of removing from DB)
+  - Toggle availability without deleting
+
+Frontend:
+  - AdminPage "Resources" tab:
+    * Add Resource form: name, type, capacity, location, building, room number,
+      description, amenities (comma-separated)
+    * Resources table: name, type, location, capacity, status, actions
+    * Each row has "Disable/Enable" toggle button
+
+================================================================================
+9. DATA FLOW EXAMPLES
+================================================================================
+
+EXAMPLE 1: USER LOGIN
+---------------------
+1. User clicks "Sign in" on LoginPage
+2. Frontend: authApi.login({email, password}) → POST /api/v1/auth/login
+3. Backend: AuthController.login() → AuthService.login()
+4. AuthService: authenticate via AuthenticationManager, generate JWT tokens
+5. Response: {accessToken, refreshToken, tokenType, user}
+6. Frontend: store token in localStorage, set user in AuthContext, redirect to /dashboard
+
+EXAMPLE 2: CREATE BOOKING
+-------------------------
+1. User selects resource, date, time, fills purpose on BookingPage
+2. Frontend: bookingApi.create(payload) → POST /api/v1/bookings
+3. Backend: JwtAuthenticationFilter validates token
+4. BookingController.create() → BookingService.createBooking()
+5. BookingService validates constraints, checks for conflicts
+6. If valid: save Booking with status=PENDING
+7. Response: BookingResponse with all details
+8. Frontend: show success screen
+
+EXAMPLE 3: ADMIN APPROVES BOOKING
+---------------------------------
+1. Admin opens AdminPage → Bookings tab
+2. Frontend: bookingApi.getAllBookings() → GET /api/v1/bookings/all
+3. Admin clicks green checkmark on a PENDING booking
+4. Frontend: bookingApi.updateStatus(id, {status: APPROVED, adminNotes})
+5. Backend: validates admin role, updates booking status and approvedAt timestamp
+6. Frontend refreshes bookings list
+
+EXAMPLE 4: ADD RESOURCE (ADMIN)
+-------------------------------
+1. Admin opens AdminPage → Resources tab
+2. Fills Add Resource form, clicks "Add Resource"
+3. Frontend: resourceApi.create(payload) → POST /api/v1/resources
+4. Backend: validates admin role, creates Resource with active=true, available=true
+5. Frontend: clear form, show success message, reload resources list
+
+================================================================================
+10. DEVELOPMENT SETUP
+================================================================================
+
+BACKEND STARTUP
+---------------
+1. Ensure Java 21 is installed
+2. Open backend folder in IntelliJ IDEA
+3. Run CampusConnectApplication.java
+4. Server starts on port 8080
+5. Dev profile auto-seeds demo data on first run
+6. H2 console: http://localhost:8080/h2-console
+7. Swagger UI: http://localhost:8080/swagger-ui.html
+
+FRONTEND STARTUP
+----------------
+1. cd frontend
+2. npm install
+3. npm run dev
+4. Vite dev server starts on port 5173
+5. Proxy configured: /api → http://localhost:8080
+
+DEMO ACCOUNTS (Auto-seeded)
+---------------------------
+admin@campus.edu     / admin123     (Admin)
+student@campus.edu   / student123   (Student)
+student2@campus.edu  / student123   (Student)
+faculty@campus.edu   / faculty123   (Faculty)
+faculty2@campus.edu  / faculty123   (Faculty)
+
+================================================================================
+11. KNOWN ISSUES & FIXES APPLIED
+================================================================================
+
+ISSUE 1: Backend Connection Refused (ECONNREFUSED)
+--------------------------------------------------
+Symptom: Vite proxy error for /api/v1/resources
+Cause: Spring Boot backend was not running
+Fix: Start backend via IntelliJ or `mvnw spring-boot:run`
+
+ISSUE 2: Added Resources Not Appearing
+--------------------------------------
+Symptom: After adding resource via admin panel, it doesn't show in list
+Root Cause: Lombok @Builder ignores field initializer values.
+            When using @Builder, `active = true` and `available = true`
+            in the entity class were NOT being set.
+            New resources saved with active=false, available=false.
+Fix: Added @Builder.Default annotation to all fields with default values:
+     - Resource.java: available, active, amenities, bookings
+     - User.java: role, enabled, bookings
+     - Booking.java: status, attendeesCount
+
+ISSUE 3: Admin Panel Bookings Not Sorted
+----------------------------------------
+Symptom: Bookings shown in random order
+Fix: Added backend sorting (findAllByOrderByBookingDateAscStartTimeAsc)
+     + frontend client-side sort fallback for closest events first
+
+ISSUE 4: Windows PowerShell Command Separator
+---------------------------------------------
+Symptom: `cd backend && mvnw spring-boot:run` fails with "&& is not valid"
+Fix: Use PowerShell syntax: `cd backend; .\mvnw.cmd spring-boot:run`
+     Or use Command Prompt instead of PowerShell
+
+================================================================================
+                              END OF DOCUMENT
+================================================================================
+
