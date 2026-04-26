@@ -33,14 +33,17 @@ public class AuthService {
             throw new ConflictException("Email already registered: " + request.getEmail());
         }
 
+        User.Role role = request.getRole() != null ? request.getRole() : User.Role.STUDENT;
+        String studentId = role == User.Role.FACULTY ? null : request.getStudentId();
+
         User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
                 .department(request.getDepartment())
-                .studentId(request.getStudentId())
+                        .studentId(studentId)
                 .phone(request.getPhone())
-                .role(request.getRole() != null ? request.getRole() : User.Role.STUDENT)
+                        .role(role)
                 .build();
 
         userRepository.save(user);
