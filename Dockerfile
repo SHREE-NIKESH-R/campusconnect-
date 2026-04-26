@@ -1,15 +1,13 @@
-# Use Java 17
-FROM eclipse-temurin:17-jdk-alpine
+FROM maven:3.9.9-eclipse-temurin-17 AS build
 
-# Set working directory
 WORKDIR /app
-
-# Copy backend project
 COPY backend /app
 
-# Build the app
-RUN chmod +x mvnw
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests
 
-# Run the app
-CMD ["java", "-jar", "target/*.jar"]
+FROM eclipse-temurin:17-jdk-alpine
+
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+
+CMD ["java", "-jar", "app.jar"]
