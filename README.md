@@ -452,24 +452,4 @@ App will be at: **http://localhost**
 
 ---
 
-## Resume Notes (for Java JD)
 
-This project demonstrates:
-
-✅ **Spring Boot REST API** — Full CRUD, layered architecture  
-✅ **Spring Security + JWT** — Stateless auth, role-based access (STUDENT/FACULTY/ADMIN)  
-✅ **JPA/Hibernate** — Entity relationships, JPQL, auditing  
-✅ **Global Exception Handling** — `@RestControllerAdvice`, custom exceptions  
-✅ **Input Validation** — `@Valid`, `@NotBlank`, `@Min` etc.  
-✅ **Profiles** — Dev (H2) + Prod (PostgreSQL) config separation  
-✅ **OpenAPI/Swagger** — Auto-documented API  
-✅ **Data Seeder** — Realistic demo data on startup  
-✅ **Docker-ready** — Dockerfile + docker-compose for deployment
-
-**Next steps to strengthen for Java JD:**
-
-- Add JUnit 5 unit tests for services
-- Add Spring Boot integration tests
-- Add caching with Spring Cache + Redis
-- Add email notifications (JavaMail/SendGrid)
-- Add file upload for resource images (AWS S3)
